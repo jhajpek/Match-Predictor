@@ -171,16 +171,17 @@ The system is a handful of containers on one Postgres, not a distributed system 
 Match Predictor/
   docs/
     assistant-service/
+    data-collector
     predictor-service/
     spring-backend-service/
     ui/
     architecture.md
     development-plan.md
   assistant-service/
-  data-collector/     # moved here and modified in phase 3
+  data/               # gitignored - data-collector output until phase 3
+  data-collector/
   predictor-service/
     api/
-    data_collector/   # moves out in phase 3
     ...
   spring-backend-service/
   ui/
@@ -189,7 +190,7 @@ Match Predictor/
   README.md
 ```
 
-Until phase 3 the `data-collector` code lives inside `predictor-service` as a separate module with no imports from `features/` or `models/`, so it can be moved out without rewriting.
+`data-collector` is its own project from the start. Until phase 3 it writes files to `data/` (raw data in its original format, processed data as Parquet) and `predictor-service` reads them through a path in its configuration. From phase 3 it writes to the `football` schema instead and only its writing functions change.
 
 ## 9. Deployment
 
@@ -207,7 +208,7 @@ Scaling is not the main part of this project, but nothing in the design blocks i
 - configuration only through environment variables
 - `/health` on every service
 - idempotent jobs
-- `data-collector` doesn't import anything from features or models
+- `data-collector` and other services share data only through files or the database, never through code
 - LLM provider behind an interface
 - timeouts and fallbacks when calling other services
 
@@ -233,7 +234,7 @@ Scaling is not the main part of this project, but nothing in the design blocks i
 
 **D10. `prediction_log` is append-only and lives in its own schema.** This gives honest live evaluation, allows early and final snapshots and lets several prediction sources (`ml`, `ai`, `ai-hybrid`) be compared on identical terms. Database permissions allow only `INSERT` and `SELECT`, so no prediction can be changed after the result is known.
 
-**D11. `data-collector` starts as a module, then becomes a job.** While `predictor-service` is the only consumer, it stays inside it. When `assistant-service` and `spring-backend-service` arrive, it moves to its own folder with its own Dockerfile and writes to `football`.
+**D11. `data-collector` is its own project from the start, the database comes later.** While `predictor-service` is the only consumer, `data-collector` writes files that are easy to use for ML. When `assistant-service` and `spring-backend-service` arrive (phase 3), it gets its own Dockerfile and scheduler and writes to `football`.
 
 **D12. Not a research project in distributed systems yet.** One database instance, one host, no replication, sharding or message broker. Resilience is handled with timeouts and fallbacks (section 7).
 

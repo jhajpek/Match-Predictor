@@ -9,7 +9,7 @@ Development plan is roughly divided into phases that should go approximately in 
 0. Data collection (`data-collector`)
 1. Machine learning models
 2. `predictor-service` with automated processes
-3. Organizing the data layer
+3. Moving football data into the database
 4. `assistant-service` - the AI agent/assistant
 5. `spring-backend-service` for authentication, CRUD operations, the points system, the recommender system, etc.
 6. `ui` - a SPA in a TypeScript framework
@@ -50,16 +50,17 @@ Scaling and distributed deployment are not the main part of this plan, but the c
 
 ### Tasks
 
-- [ ] Download historical EPL seasons into `predictor-service/data/raw/`
+- [ ] Set up `data-collector/` as its own Python project (own `pyproject.toml`) with clear functions for fetching, normalizing and writing data
+- [ ] Download historical EPL seasons into `data/raw/` in the repository root
 - [ ] Register an API-Football key and check `coverage` for the Premier League (injuries, lineups, statistics_players)
 - [ ] Fetch results and fixtures for the current season
 - [ ] Fetch fixtures for each club in all competitions so rest days and fixture congestion can be calculated
 - [ ] Fetch injuries, lineups and player statistics, every record with `fetched_at`
 - [ ] Match club names and IDs between different sources
 - [ ] Decide on the structure of `data/raw` and `data/processed` and the file format (CSV or Parquet)
-- [ ] Put the `data-collector` code in a separate module `predictor-service/data_collector/` with clear functions
+- [ ] `predictor-service` reads the data from `data/processed` through a path in its configuration - the two projects share only files, never code
 
-**Phase output:** raw data that can be reproduced and a script that can fetch it again.
+**Phase output:** `data-collector` as its own project, raw data that can be reproduced and a script that can fetch it again.
 
 ---
 
@@ -160,15 +161,14 @@ The saved predictions can't be made again, so losing them or missing a round mea
 
 ---
 
-## Phase 3: Data layer
+## Phase 3: Football data in the database
 
-This becomes necessary once there is a second service that needs the data - in this case: `assistant-service` and `spring-backend-service`.
+Until now `data-collector` writes files to `data/`. The database becomes necessary once there is a second service that needs the same data - in this case: `assistant-service` and `spring-backend-service`.
 
-- [ ] Move `data-collector` into its own folder in the repo (`data-collector/`) with its own `Dockerfile`
 - [ ] `football` schema in Postgres (matches, results, injuries, lineups, statistics) with `fetched_at`
-- [ ] `data-collector` writes to `football` and `predictor-service` reads from it instead of from CSVs
+- [ ] `data-collector` writes to `football` instead of files (only its writing functions change) and `predictor-service` reads from it
 - [ ] Features stay in `predictor-service` because training and inference both use them
-- [ ] Scheduler that runs the job after a round is played
+- [ ] `Dockerfile` for `data-collector` and a scheduler that runs the job after a round is played
 - [ ] Idempotency and tests for `data-collector`
 
 **Phase output:** `data-collector` running as a separate job that writes to the `football` schema, which the other services can read from.
