@@ -51,7 +51,7 @@ Scaling and distributed deployment are not the main part of this plan, but the c
 ### Tasks
 
 - [ ] Set up `data-collector/` as its own Python project (own `pyproject.toml`) with clear functions for fetching, normalizing and writing data
-- [ ] Download historical EPL seasons into `data/raw/` in the repository root
+- [ ] Script that downloads historical EPL seasons from football-data.co.uk into `data/raw/` in the repository root - old seasons are skipped if they already exist
 - [ ] Register an API-Football key and check `coverage` for the Premier League (injuries, lineups, statistics_players)
 - [ ] Fetch results and fixtures for the current season
 - [ ] Fetch fixtures for each club in all competitions so rest days and fixture congestion can be calculated
